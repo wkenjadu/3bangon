@@ -3,8 +3,8 @@ const fs = require("fs");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
-const BJ_ID = "breezy25";
-const BJ_NAME = "숩니찡";
+const BJ_ID = "altjs0704";
+const BJ_NAME = "323";
 const STATUS_FILE = "status.txt";
 
 const {
