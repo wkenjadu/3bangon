@@ -7,6 +7,8 @@ const BJ_ID = "altjs0704";
 const BJ_NAME = "323";
 const STATUS_FILE = "status.txt";
 
+const TEST_MODE = true; // ✅ true = 테스트 강제 전송
+
 const {
   Client,
   GatewayIntentBits,
@@ -57,16 +59,21 @@ async function checkStream() {
 
     console.log(`[체크] 방송 상태: ${isLive ? "ON" : "OFF"}`);
 
-    // 방송 시작 감지 (처음 실행 포함)
-    if (isLive && (!wasLive || isFirstRun)) {
+    // ✅ 테스트 포함 조건
+    if ((isLive && (!wasLive || isFirstRun)) || TEST_MODE) {
 
       const channel = await client.channels.fetch(CHANNEL_ID);
 
-      const title = broadData?.broad_title || "방송 시작!";
-      const thumbnail = `https://liveimg.afreecatv.com/m/${broadData?.broad_no}.jpg?cache=${Date.now()}`;
+      const title = TEST_MODE
+        ? "🧪 테스트 방송입니다"
+        : (broadData?.broad_title || "방송 시작!");
+
+      const thumbnail = broadData?.broad_no
+        ? `https://liveimg.afreecatv.com/m/${broadData.broad_no}.jpg?cache=${Date.now()}`
+        : "https://via.placeholder.com/800x450?text=TEST";
 
       const embed = new EmbedBuilder()
-        .setColor(0xD59EE8)
+        .setColor(TEST_MODE ? 0x00ffcc : 0xD59EE8)
         .setTitle(`💜 ${title}`)
         .setURL(`https://play.sooplive.co.kr/${BJ_ID}`)
         .setImage(thumbnail)
@@ -80,12 +87,14 @@ async function checkStream() {
       );
 
       await channel.send({
-        content: "@everyone 🟣 실시간 스트리밍 ON 🟣",
+        content: TEST_MODE
+          ? "@everyone 🧪 테스트 메시지"
+          : "@everyone 🟣 실시간 스트리밍 ON 🟣",
         embeds: [embed],
         components: [row]
       });
 
-      console.log("✅ 방송 알림 전송 완료");
+      console.log("✅ 메시지 전송 완료");
     }
 
     fs.writeFileSync(STATUS_FILE, String(isLive));
