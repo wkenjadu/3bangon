@@ -47,7 +47,7 @@ async function checkStream() {
       {
         headers: {
           "User-Agent": "Mozilla/5.0",
-          "Referer": `https://ch.sooplive.co.kr/${BJ_ID}`
+          "Referer": `https://ch.sooplive.com/${BJ_ID}`
         }
       }
     );
@@ -68,7 +68,7 @@ async function checkStream() {
       const embed = new EmbedBuilder()
         .setColor(0xD59EE8)
         .setTitle(`💜 ${title}`)
-        .setURL(`https://play.sooplive.co.kr/${BJ_ID}`)
+        .setURL(`https://play.sooplive.com/${BJ_ID}`)
         .setImage(thumbnail)
         .setTimestamp();
 
@@ -76,7 +76,7 @@ async function checkStream() {
         new ButtonBuilder()
           .setLabel("방송 보러가기")
           .setStyle(ButtonStyle.Link)
-          .setURL(`https://play.sooplive.co.kr/${BJ_ID}`)
+          .setURL(`https://play.sooplive.com/${BJ_ID}`)
       );
 
       await channel.send({
