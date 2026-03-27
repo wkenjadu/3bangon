@@ -16,10 +16,6 @@ const {
   ButtonStyle
 } = require("discord.js");
 
-console.log("파일 실행 시작");
-console.log("TOKEN 있음?", !!TOKEN);
-console.log("CHANNEL_ID:", CHANNEL_ID);
-
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
@@ -38,42 +34,24 @@ async function checkStream() {
     if (!fs.existsSync(STATUS_FILE)) {
       isFirstRun = true;
     } else {
-      const saved = fs.readFileSync(STATUS_FILE, "utf8").trim();
-      wasLive = saved === "true";
+      wasLive = fs.readFileSync(STATUS_FILE, "utf8").trim() === "true";
     }
 
-    // 🔥 도메인 수정 (.com)
-    const res = await axios.get(
-      `https://bjapi.afreecatv.com/api/${BJ_ID}/station`,
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Referer": `https://ch.sooplive.com/${BJ_ID}`
-        }
-      }
-    );
+    // 🔥 최신 방식: 웹페이지 체크
+    const res = await axios.get(`https://sooplive.com/station/${BJ_ID}`);
+    const html = res.data;
 
-    const broadData = res.data?.broad;
-
-    console.log("is_onair:", broadData?.is_onair);
-    console.log("broad_no:", broadData?.broad_no);
-
-    // 🔥 가장 안정적인 방송 감지
-    const isLive = !!broadData?.broad_no;
+    const isLive = html.includes("onair");
 
     console.log(`[체크] 방송 상태: ${isLive ? "ON" : "OFF"}`);
 
     if (isLive && (!wasLive || isFirstRun)) {
       const channel = await client.channels.fetch(CHANNEL_ID);
 
-      const title = broadData?.broad_title || "방송 시작!";
-      const thumbnail = `https://liveimg.afreecatv.com/m/${broadData?.broad_no}.jpg?cache=${Date.now()}`;
-
       const embed = new EmbedBuilder()
         .setColor(0xD59EE8)
-        .setTitle(`💜 ${title}`)
+        .setTitle(`💜 ${BJ_NAME} 방송 시작!`)
         .setURL(`https://play.sooplive.com/${BJ_ID}`)
-        .setImage(thumbnail)
         .setTimestamp();
 
       const row = new ActionRowBuilder().addComponents(
@@ -99,12 +77,4 @@ async function checkStream() {
   }
 }
 
-// 로그인
-if (!TOKEN) {
-  console.log("❌ DISCORD_TOKEN 없음");
-} else {
-  console.log("🔑 로그인 시도");
-  client.login(TOKEN)
-    .then(() => console.log("✅ login() 성공"))
-    .catch(err => console.log("❌ 로그인 실패:", err.message));
-}
+client.login(TOKEN);
