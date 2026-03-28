@@ -37,21 +37,38 @@ async function checkStream() {
       wasLive = fs.readFileSync(STATUS_FILE, "utf8").trim() === "true";
     }
 
-    // 🔥 최신 방식: 웹페이지 체크
+    // 🔥 최신: 웹페이지 가져오기
     const res = await axios.get(`https://sooplive.com/station/${BJ_ID}`);
     const html = res.data;
 
+    // 🔥 방송 여부
     const isLive = html.includes("onair");
 
     console.log(`[체크] 방송 상태: ${isLive ? "ON" : "OFF"}`);
 
+    // 🔥 카테고리 추출 (패턴 기반)
+    let category = "카테고리 없음";
+
+    const cateMatch = html.match(/"category_name":"(.*?)"/);
+    if (cateMatch && cateMatch[1]) {
+      category = cateMatch[1];
+    }
+
+    console.log("카테고리:", category);
+
     if (isLive && (!wasLive || isFirstRun)) {
+
       const channel = await client.channels.fetch(CHANNEL_ID);
 
       const embed = new EmbedBuilder()
         .setColor(0xD59EE8)
         .setTitle(`💜 ${BJ_NAME} 방송 시작!`)
         .setURL(`https://play.sooplive.com/${BJ_ID}`)
+        .addFields({
+          name: "📂 방송 카테고리",
+          value: category,
+          inline: true
+        })
         .setTimestamp();
 
       const row = new ActionRowBuilder().addComponents(
