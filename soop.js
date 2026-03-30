@@ -37,27 +37,32 @@ async function checkStream() {
       wasLive = fs.readFileSync(STATUS_FILE, "utf8").trim() === "true";
     }
 
-    // 🔥 최신: 웹페이지 가져오기
     const res = await axios.get(`https://sooplive.com/station/${BJ_ID}`);
     const html = res.data;
 
-    // 🔥 방송 여부
-    const isLive = html.includes("onair");
+    // 🔥 핵심: NUXT JSON 추출
+    const jsonMatch = html.match(/window\.__NUXT__=(.*?);<\/script>/);
 
-    console.log(`[체크] 방송 상태: ${isLive ? "ON" : "OFF"}`);
-
-    // 🔥 카테고리 추출 (패턴 기반)
+    let isLive = false;
     let category = "카테고리 없음";
 
-    const cateMatch = html.match(/"category_name":"(.*?)"/);
-    if (cateMatch && cateMatch[1]) {
-      category = cateMatch[1];
+    if (jsonMatch) {
+      const data = JSON.parse(jsonMatch[1]);
+
+      // 🔥 방송 상태
+      isLive = data?.state?.live?.is_live || false;
+
+      // 🔥 카테고리
+      category =
+        data?.state?.live?.category_name ||
+        data?.state?.live?.cate_name ||
+        "카테고리 없음";
     }
 
-    console.log("카테고리:", category);
+    console.log("isLive:", isLive);
+    console.log("category:", category);
 
     if (isLive && (!wasLive || isFirstRun)) {
-
       const channel = await client.channels.fetch(CHANNEL_ID);
 
       const embed = new EmbedBuilder()
