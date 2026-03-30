@@ -34,51 +34,53 @@ async function checkStream() {
     if (!fs.existsSync(STATUS_FILE)) {
       isFirstRun = true;
     } else {
-      wasLive = fs.readFileSync(STATUS_FILE, "utf8").trim() === "true";
+      const saved = fs.readFileSync(STATUS_FILE, "utf8").trim();
+      wasLive = saved === "true";
     }
 
-    const res = await axios.get(`https://sooplive.com/station/${BJ_ID}`);
-    const html = res.data;
-
-    // 🔥 핵심: JSON 전체 추출
-    const jsonMatch = html.match(/window\.__NUXT__=(.*?);<\/script>/);
-
-    let isLive = false;
-    let category = "카테고리 없음";
-
-    if (jsonMatch) {
-      const data = JSON.parse(jsonMatch[1]);
-
-      // 🔥 전체 JSON 출력 (중요)
-      console.log("NUXT 데이터 키:", Object.keys(data));
-
-      // 🔥 강제 탐색 (안전 방식)
-      const jsonString = JSON.stringify(data);
-
-      isLive = jsonString.includes('"is_live":true') || jsonString.includes('"onair":true');
-
-      // 🔥 카테고리 찾기
-      const cateMatch = jsonString.match(/"category_name":"(.*?)"/);
-      if (cateMatch) {
-        category = cateMatch[1];
+    // 🔥 핵심 API + Referer 최신 적용
+    const res = await axios.get(
+      `https://bjapi.afreecatv.com/api/${BJ_ID}/station`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Referer": `https://www.sooplive.com/station/${BJ_ID}`
+        }
       }
-    }
+    );
+
+    const broadData = res.data?.broad;
+
+    // 🔥 방송 감지 (가장 안정)
+    const isLive = !!broadData?.broad_no;
+
+    // 🔥 카테고리
+    const category =
+      broadData?.broad_cate_name ||
+      broadData?.cate_name ||
+      "카테고리 없음";
 
     console.log("isLive:", isLive);
     console.log("category:", category);
 
+    // 🔥 방송 시작 감지
     if (isLive && (!wasLive || isFirstRun)) {
+
       const channel = await client.channels.fetch(CHANNEL_ID);
+
+      const title = broadData?.broad_title || "방송 시작!";
+      const thumbnail = `https://liveimg.afreecatv.com/m/${broadData?.broad_no}.jpg?cache=${Date.now()}`;
 
       const embed = new EmbedBuilder()
         .setColor(0xD59EE8)
-        .setTitle(`💜 ${BJ_NAME} 방송 시작!`)
+        .setTitle(`💜 ${title}`)
         .setURL(`https://play.sooplive.com/${BJ_ID}`)
         .addFields({
           name: "📂 방송 카테고리",
           value: category,
           inline: true
         })
+        .setImage(thumbnail)
         .setTimestamp();
 
       const row = new ActionRowBuilder().addComponents(
@@ -97,6 +99,7 @@ async function checkStream() {
       console.log("✅ 방송 알림 전송 완료");
     }
 
+    // 🔥 상태 저장 (중요)
     fs.writeFileSync(STATUS_FILE, isLive ? "true" : "false");
 
   } catch (e) {
@@ -104,4 +107,5 @@ async function checkStream() {
   }
 }
 
+// 로그인
 client.login(TOKEN);
