@@ -40,7 +40,7 @@ async function checkStream() {
     const res = await axios.get(`https://sooplive.com/station/${BJ_ID}`);
     const html = res.data;
 
-    // 🔥 핵심: NUXT JSON 추출
+    // 🔥 핵심: JSON 전체 추출
     const jsonMatch = html.match(/window\.__NUXT__=(.*?);<\/script>/);
 
     let isLive = false;
@@ -49,14 +49,19 @@ async function checkStream() {
     if (jsonMatch) {
       const data = JSON.parse(jsonMatch[1]);
 
-      // 🔥 방송 상태
-      isLive = data?.state?.live?.is_live || false;
+      // 🔥 전체 JSON 출력 (중요)
+      console.log("NUXT 데이터 키:", Object.keys(data));
 
-      // 🔥 카테고리
-      category =
-        data?.state?.live?.category_name ||
-        data?.state?.live?.cate_name ||
-        "카테고리 없음";
+      // 🔥 강제 탐색 (안전 방식)
+      const jsonString = JSON.stringify(data);
+
+      isLive = jsonString.includes('"is_live":true') || jsonString.includes('"onair":true');
+
+      // 🔥 카테고리 찾기
+      const cateMatch = jsonString.match(/"category_name":"(.*?)"/);
+      if (cateMatch) {
+        category = cateMatch[1];
+      }
     }
 
     console.log("isLive:", isLive);
